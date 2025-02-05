@@ -6,24 +6,32 @@ import java.util.*;
 public class TransportBookingSystem extends Applet implements ActionListener {
     private CardLayout cardLayout;
     private Panel mainPanel;
-
+    
+    // UI Components
     private TextField usernameField, passwordField;
     private Button loginButton, registerButton;
-    private Label loginErrorLabel;
-
+    private Label loginErrorLabel, titleLabel;
+    private Panel loginPanel, inputPanel, buttonPanel;
+    
+    // Other components remain the same
     private Choice transportChoice;
     private TextField dateField, timeField;
     private Button confirmDetailsButton, confirmBookingButton, viewBookingsButton;
-
     private Label confirmationLabel;
     private TextArea bookingsArea;
-
     private ArrayList<String> bookings;
     private UserManager userManager;
+
+    // Custom colors
+    private final Color MAIN_BLUE = new Color(51, 122, 183);
+    private final Color LIGHT_BLUE = new Color(217, 237, 247);
+    private final Color DARK_BLUE = new Color(40, 96, 144);
+    private final Color BACKGROUND_COLOR = new Color(245, 245, 245);
 
     public void init() {
         System.out.println("Initializing applet...");
         setSize(600, 400);
+        setBackground(BACKGROUND_COLOR);
 
         // Initialize components
         cardLayout = new CardLayout();
@@ -31,27 +39,73 @@ public class TransportBookingSystem extends Applet implements ActionListener {
         bookings = new ArrayList<String>();
         userManager = new UserManager();
 
-        // Login Page
-        Panel loginPanel = new Panel(new GridLayout(4, 2));
-        usernameField = new TextField();
-        passwordField = new TextField();
+        // Enhanced Login Page
+        loginPanel = new Panel(new BorderLayout(0, 20));
+        loginPanel.setBackground(BACKGROUND_COLOR);
+        
+        // Title Panel
+        Panel titlePanel = new Panel(new FlowLayout(FlowLayout.CENTER));
+        titlePanel.setBackground(MAIN_BLUE);
+        titleLabel = new Label("Transport Booking System", Label.CENTER);
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titlePanel.add(titleLabel);
+        
+        // Input Panel
+        inputPanel = new Panel(new GridLayout(4, 1, 0, 10));
+        inputPanel.setBackground(BACKGROUND_COLOR);
+        
+        // Username field with label
+        Panel usernamePanel = new Panel(new BorderLayout(5, 0));
+        usernamePanel.setBackground(BACKGROUND_COLOR);
+        Label usernameLabel = new Label("Username:");
+        usernameLabel.setForeground(DARK_BLUE);
+        usernameField = new TextField(20);
+        usernamePanel.add(usernameLabel, BorderLayout.WEST);
+        usernamePanel.add(usernameField, BorderLayout.CENTER);
+        
+        // Password field with label
+        Panel passwordPanel = new Panel(new BorderLayout(5, 0));
+        passwordPanel.setBackground(BACKGROUND_COLOR);
+        Label passwordLabel = new Label("Password:");
+        passwordLabel.setForeground(DARK_BLUE);
+        passwordField = new TextField(20);
         passwordField.setEchoChar('*');
-        loginButton = new Button("Login");
-        registerButton = new Button("Register");
-        loginErrorLabel = new Label("");
-        loginErrorLabel.setForeground(Color.RED);
+        passwordPanel.add(passwordLabel, BorderLayout.WEST);
+        passwordPanel.add(passwordField, BorderLayout.CENTER);
+        
+        // Button Panel
+        buttonPanel = new Panel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+        
+        loginButton = new CustomButton("Login", MAIN_BLUE);
+        registerButton = new CustomButton("Register", DARK_BLUE);
         
         loginButton.addActionListener(this);
         registerButton.addActionListener(this);
         
-        loginPanel.add(new Label("Username:"));
-        loginPanel.add(usernameField);
-        loginPanel.add(new Label("Password:"));
-        loginPanel.add(passwordField);
-        loginPanel.add(loginButton);
-        loginPanel.add(registerButton);
-        loginPanel.add(loginErrorLabel);
+        buttonPanel.add(loginButton);
+        buttonPanel.add(registerButton);
         
+        // Error Label
+        loginErrorLabel = new Label("", Label.CENTER);
+        loginErrorLabel.setForeground(Color.RED);
+        
+        // Add components to input panel
+        inputPanel.add(usernamePanel);
+        inputPanel.add(passwordPanel);
+        inputPanel.add(buttonPanel);
+        inputPanel.add(loginErrorLabel);
+        
+        // Add panels to login panel
+        loginPanel.add(titlePanel, BorderLayout.NORTH);
+        
+        // Center panel to contain input panel
+        Panel centerPanel = new Panel(new FlowLayout(FlowLayout.CENTER));
+        centerPanel.setBackground(BACKGROUND_COLOR);
+        centerPanel.add(inputPanel);
+        loginPanel.add(centerPanel, BorderLayout.CENTER);
+
         // Booking Page
         Panel bookingPanel = new Panel(new GridLayout(5, 2));
         transportChoice = new Choice();
@@ -100,6 +154,28 @@ public class TransportBookingSystem extends Applet implements ActionListener {
         repaint();    
     }
 
+        // Custom Button class for better aesthetics
+        private class CustomButton extends Button {
+            public CustomButton(String label, Color bgColor) {
+                super(label);
+                setBackground(bgColor);
+                setForeground(Color.WHITE);
+                setFont(new Font("Arial", Font.BOLD, 12));
+            }
+            
+            public void paint(Graphics g) {
+                Color oldColor = g.getColor();
+                g.setColor(getBackground());
+                g.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g.setColor(getForeground());
+                FontMetrics fm = g.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getLabel())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g.drawString(getLabel(), x, y);
+                g.setColor(oldColor);
+            }
+        }
+
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
         
@@ -109,15 +185,13 @@ public class TransportBookingSystem extends Applet implements ActionListener {
             String password = passwordField.getText();
             
             if (userManager.loginUser(username, password)) {
-                // Clear any previous error messages
-                loginErrorLabel.setText("");
                 cardLayout.show(mainPanel, "Booking");
             } else {
-                // Show error message on the login page
-                loginErrorLabel.setText(userManager.getLastErrorMessage());
+                confirmationLabel.setText(userManager.getLastErrorMessage());
+                cardLayout.show(mainPanel, "Confirmation");
             }
         }
-                
+        
         // Register button handling
         if (source == registerButton) {
             String username = usernameField.getText();
