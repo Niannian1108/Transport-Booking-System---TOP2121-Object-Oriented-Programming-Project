@@ -1,7 +1,6 @@
 import java.applet.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.util.*;
 
 public class TransportBookingSystem extends Applet implements ActionListener {
@@ -10,6 +9,7 @@ public class TransportBookingSystem extends Applet implements ActionListener {
 
     private TextField usernameField, passwordField;
     private Button loginButton, registerButton;
+    private Label loginErrorLabel;
 
     private Choice transportChoice;
     private TextField dateField, timeField;
@@ -19,28 +19,39 @@ public class TransportBookingSystem extends Applet implements ActionListener {
     private TextArea bookingsArea;
 
     private ArrayList<String> bookings;
+    private UserManager userManager;
 
     public void init() {
+        System.out.println("Initializing applet...");
+        setSize(600, 400);
+
+        // Initialize components
         cardLayout = new CardLayout();
         mainPanel = new Panel(cardLayout);
         bookings = new ArrayList<String>();
+        userManager = new UserManager();
 
         // Login Page
-        Panel loginPanel = new Panel(new GridLayout(3, 2));
+        Panel loginPanel = new Panel(new GridLayout(4, 2));
         usernameField = new TextField();
         passwordField = new TextField();
         passwordField.setEchoChar('*');
         loginButton = new Button("Login");
         registerButton = new Button("Register");
+        loginErrorLabel = new Label("");
+        loginErrorLabel.setForeground(Color.RED);
+        
         loginButton.addActionListener(this);
         registerButton.addActionListener(this);
+        
         loginPanel.add(new Label("Username:"));
         loginPanel.add(usernameField);
         loginPanel.add(new Label("Password:"));
         loginPanel.add(passwordField);
         loginPanel.add(loginButton);
         loginPanel.add(registerButton);
-
+        loginPanel.add(loginErrorLabel);
+        
         // Booking Page
         Panel bookingPanel = new Panel(new GridLayout(5, 2));
         transportChoice = new Choice();
@@ -84,26 +95,57 @@ public class TransportBookingSystem extends Applet implements ActionListener {
 
         setLayout(new BorderLayout());
         add(mainPanel, BorderLayout.CENTER);
+
         cardLayout.show(mainPanel, "Login");
+        repaint();    
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == loginButton || e.getSource() == registerButton) {
-            cardLayout.show(mainPanel, "Booking");
-        } else if (e.getSource() == confirmDetailsButton) {
-            String transport = transportChoice.getSelectedItem();
-            String date = dateField.getText();
-            String time = timeField.getText();
-            confirmationLabel.setText("Transport: " + transport + ", Date: " + date + ", Time: " + time);
+        Object source = e.getSource();
+        
+        // Login button handling
+        if (source == loginButton) {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            
+            if (userManager.loginUser(username, password)) {
+                // Clear any previous error messages
+                loginErrorLabel.setText("");
+                cardLayout.show(mainPanel, "Booking");
+            } else {
+                // Show error message on the login page
+                loginErrorLabel.setText(userManager.getLastErrorMessage());
+            }
+        }
+                
+        // Register button handling
+        if (source == registerButton) {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            
+            if (!userManager.userExists(username)) {
+                userManager.registerUser(username, password);
+                System.out.println("User registered successfully");
+            } else {
+                System.out.println("Username already exists");
+            }
+        }
+        
+        // Other button handlers can be added similarly
+        if (source == confirmDetailsButton) {
             cardLayout.show(mainPanel, "Confirmation");
-        } else if (e.getSource() == confirmBookingButton) {
-            String transport = transportChoice.getSelectedItem();
-            String date = dateField.getText();
-            String time = timeField.getText();
-            bookings.add("Transport: " + transport + ", Date: " + date + ", Time: " + time);
-            showStatus("Booking Confirmed!");
+        }
+        
+        if (source == confirmBookingButton) {
+            // Booking confirmation logic
+            String booking = transportChoice.getSelectedItem() + " - " + 
+                             dateField.getText() + " " + 
+                             timeField.getText();
+            bookings.add(booking);
             cardLayout.show(mainPanel, "Booking");
-        } else if (e.getSource() == viewBookingsButton) {
+        }
+        
+        if (source == viewBookingsButton) {
             bookingsArea.setText("");
             for (String booking : bookings) {
                 bookingsArea.append(booking + "\n");
