@@ -1,3 +1,7 @@
 grant {
     permission java.io.FilePermission "users.txt", "read,write,delete";
 };
+
+grant {
+    permission java.io.FilePermission "bookings.dat", "read, write";
+};
