@@ -304,23 +304,45 @@ public class TransportBookingSystem extends Applet implements ActionListener {
     }
 
     private void saveBookings() {
+        ObjectOutputStream oos = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(new ArrayList<Booking>(bookings));
-            oos.close();
+            oos = new ObjectOutputStream(new FileOutputStream("bookings.dat"));
+            oos.writeObject(bookings);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving bookings: " + e.getMessage());
+        } finally {
+            if (oos != null) {
+                try {
+                    oos.close();
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "Error closing stream: " + e.getMessage());
+                }
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     private void loadBookings() {
+        ObjectInputStream ois = null;
         try {
-            bookings = new ArrayList<Booking>();
-        } catch (Exception e) {
+            ois = new ObjectInputStream(new FileInputStream("bookings.dat"));
+            bookings = (ArrayList<Booking>) ois.readObject();
+        } catch (FileNotFoundException e) {
+            bookings = new ArrayList<Booking>(); // File not found, start with an empty list
+        } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error loading bookings: " + e.getMessage());
             bookings = new ArrayList<Booking>();
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(this, "Error loading bookings: " + e.getMessage());
+            bookings = new ArrayList<Booking>();        
+        } finally {
+            if (ois != null) {
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "Error closing stream: " + e.getMessage());
+                }
+            }
         }
     }
 
