@@ -54,7 +54,7 @@ public class UserManager {
             if (!userFound) {
                 lastErrorMessage = "User not found, please register.";
             } else {
-                lastErrorMessage = "Username/password incorrect, please try again.";
+                lastErrorMessage = "Password incorrect, please try again.";
             }
         } catch (IOException e) {
             System.out.println("Error reading user data: " + e.getMessage());
