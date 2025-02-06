@@ -176,55 +176,56 @@ public class TransportBookingSystem extends Applet implements ActionListener {
             }
         }
 
-    public void actionPerformed(ActionEvent e) {
-        Object source = e.getSource();
-        
-        // Login button handling
-        if (source == loginButton) {
-            String username = usernameField.getText();
-            String password = passwordField.getText();
+        public void actionPerformed(ActionEvent e) {
+            Object source = e.getSource();
             
-            if (userManager.loginUser(username, password)) {
-                cardLayout.show(mainPanel, "Booking");
-            } else {
-                confirmationLabel.setText(userManager.getLastErrorMessage());
+            // Login button handling
+            if (source == loginButton) {
+                String username = usernameField.getText();
+                String password = passwordField.getText();
+                
+                if (userManager.loginUser(username, password)) {
+                    cardLayout.show(mainPanel, "Booking");
+                } else {
+                    // Display the error message on the login page
+                    loginErrorLabel.setText(userManager.getLastErrorMessage());
+                    cardLayout.show(mainPanel, "Login"); // Stay on the login page
+                }
+            }
+            
+            // Register button handling
+            if (source == registerButton) {
+                String username = usernameField.getText();
+                String password = passwordField.getText();
+                
+                if (!userManager.userExists(username)) {
+                    userManager.registerUser(username, password);
+                    System.out.println("User registered successfully");
+                } else {
+                    System.out.println("Username already exists");
+                }
+            }
+            
+            // Other button handlers can be added similarly
+            if (source == confirmDetailsButton) {
                 cardLayout.show(mainPanel, "Confirmation");
             }
-        }
-        
-        // Register button handling
-        if (source == registerButton) {
-            String username = usernameField.getText();
-            String password = passwordField.getText();
             
-            if (!userManager.userExists(username)) {
-                userManager.registerUser(username, password);
-                System.out.println("User registered successfully");
-            } else {
-                System.out.println("Username already exists");
+            if (source == confirmBookingButton) {
+                // Booking confirmation logic
+                String booking = transportChoice.getSelectedItem() + " - " + 
+                                 dateField.getText() + " " + 
+                                 timeField.getText();
+                bookings.add(booking);
+                cardLayout.show(mainPanel, "Booking");
             }
-        }
-        
-        // Other button handlers can be added similarly
-        if (source == confirmDetailsButton) {
-            cardLayout.show(mainPanel, "Confirmation");
-        }
-        
-        if (source == confirmBookingButton) {
-            // Booking confirmation logic
-            String booking = transportChoice.getSelectedItem() + " - " + 
-                             dateField.getText() + " " + 
-                             timeField.getText();
-            bookings.add(booking);
-            cardLayout.show(mainPanel, "Booking");
-        }
-        
-        if (source == viewBookingsButton) {
-            bookingsArea.setText("");
-            for (String booking : bookings) {
-                bookingsArea.append(booking + "\n");
+            
+            if (source == viewBookingsButton) {
+                bookingsArea.setText("");
+                for (String booking : bookings) {
+                    bookingsArea.append(booking + "\n");
+                }
+                cardLayout.show(mainPanel, "ViewBookings");
             }
-            cardLayout.show(mainPanel, "ViewBookings");
         }
     }
-}
