@@ -2,230 +2,344 @@ import java.applet.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.io.*;
+import javax.swing.JOptionPane;
 
 public class TransportBookingSystem extends Applet implements ActionListener {
     private CardLayout cardLayout;
     private Panel mainPanel;
+    private UserManager userManager;
     
-    // UI Components
+    // UI Components for Login
     private TextField usernameField, passwordField;
     private Button loginButton, registerButton;
-    private Label loginErrorLabel, titleLabel;
-    private Panel loginPanel, inputPanel, buttonPanel;
-    
-    // Other components remain the same
-    private Choice transportChoice;
-    private TextField dateField, timeField;
-    private Button confirmDetailsButton, confirmBookingButton, viewBookingsButton;
-    private Label confirmationLabel;
-    private TextArea bookingsArea;
-    private ArrayList<String> bookings;
-    private UserManager userManager;
-
-    // Custom colors
+    private Label loginErrorLabel;
     private final Color MAIN_BLUE = new Color(51, 122, 183);
-    private final Color LIGHT_BLUE = new Color(217, 237, 247);
     private final Color DARK_BLUE = new Color(40, 96, 144);
     private final Color BACKGROUND_COLOR = new Color(245, 245, 245);
 
-    public void init() {
-        System.out.println("Initializing applet...");
-        setSize(600, 400);
-        setBackground(BACKGROUND_COLOR);
+    // UI Components for Booking
+    private Choice transportChoice, destinationChoice;
+    private TextField dateField, timeField, paymentField;
+    private TextArea bookingsArea;
+    private ArrayList<Booking> bookings;
+    private HashMap<String, Double> prices;
 
-        // Initialize components
+    public void init() {
+        userManager = new UserManager();
+        bookings = new ArrayList<Booking>();
+        prices = new HashMap<String, Double>();
+        initializePrices();
+        loadBookings();
+
         cardLayout = new CardLayout();
         mainPanel = new Panel(cardLayout);
-        bookings = new ArrayList<String>();
-        userManager = new UserManager();
 
-        // Enhanced Login Page
-        loginPanel = new Panel(new BorderLayout(0, 20));
+        setupLoginPanel();
+        setupBookingPanel();
+        setupConfirmationPanel();
+        setupViewBookingsPanel();
+
+        setLayout(new BorderLayout());
+        add(mainPanel, BorderLayout.CENTER);
+        cardLayout.show(mainPanel, "Login");
+    }
+
+    private void initializePrices() {
+        prices.put("Johor Baharu", 55.0);
+        prices.put("Kuala Lumpur", 60.0);
+        prices.put("Penang", 50.0);
+        prices.put("Melaka", 45.0);
+        prices.put("Kluang", 40.0);
+    }
+
+    private void setupLoginPanel() {
+        Panel loginPanel = new Panel(new BorderLayout(0, 20));
         loginPanel.setBackground(BACKGROUND_COLOR);
-        
+
         // Title Panel
         Panel titlePanel = new Panel(new FlowLayout(FlowLayout.CENTER));
         titlePanel.setBackground(MAIN_BLUE);
-        titleLabel = new Label("Transport Booking System", Label.CENTER);
+        Label titleLabel = new Label("Transport Booking System", Label.CENTER);
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titlePanel.add(titleLabel);
-        
+
         // Input Panel
-        inputPanel = new Panel(new GridLayout(4, 1, 0, 10));
+        Panel inputPanel = new Panel(new GridLayout(4, 1, 0, 10));
         inputPanel.setBackground(BACKGROUND_COLOR);
-        
-        // Username field with label
+
+        // Username
         Panel usernamePanel = new Panel(new BorderLayout(5, 0));
-        usernamePanel.setBackground(BACKGROUND_COLOR);
-        Label usernameLabel = new Label("Username:");
-        usernameLabel.setForeground(DARK_BLUE);
+        usernamePanel.add(new Label("Username:"), BorderLayout.WEST);
         usernameField = new TextField(20);
-        usernamePanel.add(usernameLabel, BorderLayout.WEST);
         usernamePanel.add(usernameField, BorderLayout.CENTER);
-        
-        // Password field with label
+
+        // Password
         Panel passwordPanel = new Panel(new BorderLayout(5, 0));
-        passwordPanel.setBackground(BACKGROUND_COLOR);
-        Label passwordLabel = new Label("Password:");
-        passwordLabel.setForeground(DARK_BLUE);
+        passwordPanel.add(new Label("Password:"), BorderLayout.WEST);
         passwordField = new TextField(20);
         passwordField.setEchoChar('*');
-        passwordPanel.add(passwordLabel, BorderLayout.WEST);
         passwordPanel.add(passwordField, BorderLayout.CENTER);
-        
-        // Button Panel
-        buttonPanel = new Panel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(BACKGROUND_COLOR);
-        
+
+        // Buttons
+        Panel buttonPanel = new Panel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         loginButton = new CustomButton("Login", MAIN_BLUE);
         registerButton = new CustomButton("Register", DARK_BLUE);
-        
         loginButton.addActionListener(this);
         registerButton.addActionListener(this);
-        
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
-        
+
         // Error Label
         loginErrorLabel = new Label("", Label.CENTER);
         loginErrorLabel.setForeground(Color.RED);
-        
-        // Add components to input panel
+
         inputPanel.add(usernamePanel);
         inputPanel.add(passwordPanel);
         inputPanel.add(buttonPanel);
         inputPanel.add(loginErrorLabel);
-        
-        // Add panels to login panel
-        loginPanel.add(titlePanel, BorderLayout.NORTH);
-        
-        // Center panel to contain input panel
-        Panel centerPanel = new Panel(new FlowLayout(FlowLayout.CENTER));
-        centerPanel.setBackground(BACKGROUND_COLOR);
-        centerPanel.add(inputPanel);
-        loginPanel.add(centerPanel, BorderLayout.CENTER);
 
-        // Booking Page
-        Panel bookingPanel = new Panel(new GridLayout(5, 2));
+        loginPanel.add(titlePanel, BorderLayout.NORTH);
+        loginPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(loginPanel, "Login");
+    }
+
+    private void setupBookingPanel() {
+        Panel bookingPanel = new Panel(new GridLayout(7, 2, 5, 5));
+        
         transportChoice = new Choice();
         transportChoice.add("Bus");
         transportChoice.add("Train");
         transportChoice.add("Ferry");
+
+        destinationChoice = new Choice();
+        for (String dest : prices.keySet()) destinationChoice.add(dest);
+
         dateField = new TextField("YYYY-MM-DD");
         timeField = new TextField("HH:MM");
-        confirmDetailsButton = new Button("Confirm Details");
-        confirmDetailsButton.addActionListener(this);
+        Button bookingButton = new CustomButton("Proceed", MAIN_BLUE);
+        Button viewBookingsButton = new CustomButton("View Bookings", DARK_BLUE);
+
+        bookingButton.addActionListener(this);
+        viewBookingsButton.addActionListener(this);
+
         bookingPanel.add(new Label("Transport Mode:"));
         bookingPanel.add(transportChoice);
+        bookingPanel.add(new Label("Destination:"));
+        bookingPanel.add(destinationChoice);
         bookingPanel.add(new Label("Date:"));
         bookingPanel.add(dateField);
         bookingPanel.add(new Label("Time:"));
         bookingPanel.add(timeField);
-        bookingPanel.add(confirmDetailsButton);
+        bookingPanel.add(bookingButton);
+        bookingPanel.add(viewBookingsButton);
 
-        // Confirmation Page
-        Panel confirmationPanel = new Panel(new GridLayout(3, 1));
-        confirmationLabel = new Label("Please confirm your details.");
-        confirmBookingButton = new Button("Confirm Booking");
-        confirmBookingButton.addActionListener(this);
-        confirmationPanel.add(confirmationLabel);
-        confirmationPanel.add(confirmBookingButton);
-
-        // View Bookings Page
-        Panel viewBookingsPanel = new Panel(new BorderLayout());
-        bookingsArea = new TextArea();
-        bookingsArea.setEditable(false);
-        viewBookingsButton = new Button("Back to Booking Page");
-        viewBookingsButton.addActionListener(this);
-        viewBookingsPanel.add(bookingsArea, BorderLayout.CENTER);
-        viewBookingsPanel.add(viewBookingsButton, BorderLayout.SOUTH);
-
-        // Adding panels to mainPanel
-        mainPanel.add(loginPanel, "Login");
         mainPanel.add(bookingPanel, "Booking");
-        mainPanel.add(confirmationPanel, "Confirmation");
-        mainPanel.add(viewBookingsPanel, "ViewBookings");
-
-        setLayout(new BorderLayout());
-        add(mainPanel, BorderLayout.CENTER);
-
-        cardLayout.show(mainPanel, "Login");
-        repaint();    
     }
 
-        // Custom Button class for better aesthetics
-        private class CustomButton extends Button {
-            public CustomButton(String label, Color bgColor) {
-                super(label);
-                setBackground(bgColor);
-                setForeground(Color.WHITE);
-                setFont(new Font("Arial", Font.BOLD, 12));
-            }
+    private void setupConfirmationPanel() {
+        Panel confirmationPanel = new Panel(new GridLayout(5, 1, 5, 5));
+
+        Label confirmationLabel = new Label("Booking Details:", Label.CENTER);
+        confirmationLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+        TextArea confirmationText = new TextArea(5, 40);
+        confirmationText.setEditable(false);
+
+        paymentField = new TextField("Enter payment details");
+        Button confirmBookingButton = new CustomButton("Confirm and Pay", MAIN_BLUE);
+        Button cancelButton = new CustomButton("Cancel", DARK_BLUE);
+
+        confirmBookingButton.addActionListener(this);
+        cancelButton.addActionListener(this);
+
+        confirmationPanel.add(confirmationLabel);
+        confirmationPanel.add(confirmationText);
+        confirmationPanel.add(paymentField);
+        confirmationPanel.add(confirmBookingButton);
+        confirmationPanel.add(cancelButton);
+
+        mainPanel.add(confirmationPanel, "Confirmation");
+    }
+
+    private void setupViewBookingsPanel() {
+        Panel viewBookingsPanel = new Panel(new BorderLayout(5, 5));
+
+        Label headerLabel = new Label("Your Bookings:", Label.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+        bookingsArea = new TextArea(10, 40);
+        bookingsArea.setEditable(false);
+
+        Button backButton = new CustomButton("Back to Booking", MAIN_BLUE);
+        backButton.addActionListener(this);
+
+        viewBookingsPanel.add(headerLabel, BorderLayout.NORTH);
+        viewBookingsPanel.add(bookingsArea, BorderLayout.CENTER);
+        viewBookingsPanel.add(backButton, BorderLayout.SOUTH);
+
+        mainPanel.add(viewBookingsPanel, "ViewBookings");
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == loginButton) {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
             
-            public void paint(Graphics g) {
-                Color oldColor = g.getColor();
-                g.setColor(getBackground());
-                g.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g.setColor(getForeground());
-                FontMetrics fm = g.getFontMetrics();
-                int x = (getWidth() - fm.stringWidth(getLabel())) / 2;
-                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
-                g.drawString(getLabel(), x, y);
-                g.setColor(oldColor);
+            if (userManager.loginUser(username, password)) {
+                cardLayout.show(mainPanel, "Booking");
+            } else {
+                loginErrorLabel.setText(userManager.getLastErrorMessage());
+            }
+        } 
+        else if (e.getSource() == registerButton) {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            
+            if (!userManager.userExists(username)) {
+                userManager.registerUser(username, password);
+                loginErrorLabel.setText("Registration successful!");
+            } else {
+                loginErrorLabel.setText("Username already exists!");
             }
         }
+        else if (e.getSource() instanceof Button) {
+            Button source = (Button) e.getSource();
+            if (source.getLabel().equals("Proceed")) {
+                String date = dateField.getText();
+                String time = timeField.getText();
 
-        public void actionPerformed(ActionEvent e) {
-            Object source = e.getSource();
-            
-            // Login button handling
-            if (source == loginButton) {
-                String username = usernameField.getText();
-                String password = passwordField.getText();
-                
-                if (userManager.loginUser(username, password)) {
-                    cardLayout.show(mainPanel, "Booking");
-                } else {
-                    // Display the error message on the login page
-                    loginErrorLabel.setText(userManager.getLastErrorMessage());
-                    cardLayout.show(mainPanel, "Login"); // Stay on the login page
+                if (!isValidDate(date)) {
+                    JOptionPane.showMessageDialog(this,
+                        "Invalid date! Please use YYYY-MM-DD format",
+                        "Invalid Date",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-            }
-            
-            // Register button handling
-            if (source == registerButton) {
-                String username = usernameField.getText();
-                String password = passwordField.getText();
-                
-                if (!userManager.userExists(username)) {
-                    userManager.registerUser(username, password);
-                    System.out.println("User registered successfully");
-                } else {
-                    System.out.println("Username already exists");
+                if (!isValidTime(time)) {
+                    JOptionPane.showMessageDialog(this,
+                        "Invalid time! Please use HH:MM format",
+                        "Invalid Time",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-            }
-            
-            // Other button handlers can be added similarly
-            if (source == confirmDetailsButton) {
+
+                double amount = prices.get(destinationChoice.getSelectedItem());
+                Component[] components = mainPanel.getComponents();
+                for (Component comp : components) {
+                    if (comp instanceof Panel && ((Panel) comp).getName() != null && ((Panel) comp).getName().equals("Confirmation")) {
+                        Panel confirmationPanel = (Panel) comp;
+                        for (Component c : confirmationPanel.getComponents()) {
+                            if (c instanceof TextArea) {
+                                TextArea confirmationText = (TextArea) c;
+                                String confirmationDetails = String.format(
+                                    "%-15s %s\n%-15s %s\n%-15s %s\n%-15s %s\n%-15s $%.2f",
+                                    "Transport:", transportChoice.getSelectedItem(),
+                                    "Destination:", destinationChoice.getSelectedItem(),
+                                    "Date:", date,
+                                    "Time:", time,
+                                    "Amount:", amount
+                                );
+                                confirmationText.setText(confirmationDetails);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
                 cardLayout.show(mainPanel, "Confirmation");
             }
-            
-            if (source == confirmBookingButton) {
-                // Booking confirmation logic
-                String booking = transportChoice.getSelectedItem() + " - " + 
-                                 dateField.getText() + " " + 
-                                 timeField.getText();
-                bookings.add(booking);
-                cardLayout.show(mainPanel, "Booking");
-            }
-            
-            if (source == viewBookingsButton) {
-                bookingsArea.setText("");
-                for (String booking : bookings) {
-                    bookingsArea.append(booking + "\n");
+            else if (source.getLabel().equals("Confirm and Pay")) {
+                if (paymentField.getText().length() > 0) {
+                    Booking newBooking = new Booking(
+                        transportChoice.getSelectedItem(),
+                        destinationChoice.getSelectedItem(),
+                        dateField.getText(),
+                        timeField.getText(),
+                        prices.get(destinationChoice.getSelectedItem())
+                    );
+                    newBooking.setPaid(true);
+                    bookings.add(newBooking);
+                    saveBookings();
+                    JOptionPane.showMessageDialog(this, "Booking Confirmed!");
+                    cardLayout.show(mainPanel, "Booking");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Please enter payment details!");
                 }
+            }
+            else if (source.getLabel().equals("View Bookings")) {
+                updateBookingsDisplay();
                 cardLayout.show(mainPanel, "ViewBookings");
+            }
+            else if (source.getLabel().equals("Back to Booking") || source.getLabel().equals("Cancel")) {
+                cardLayout.show(mainPanel, "Booking");
             }
         }
     }
+
+    private boolean isValidDate(String date) {
+        if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
+        try {
+            String[] parts = date.split("-");
+            int year = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+            int day = Integer.parseInt(parts[2]);
+            return year >= 2024 && year <= 2050 && month >= 1 && month <= 12 && day >= 1 && day <= 31;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isValidTime(String time) {
+        if (!time.matches("\\d{2}:\\d{2}")) return false;
+        try {
+            String[] parts = time.split(":");
+            int hour = Integer.parseInt(parts[0]);
+            int minute = Integer.parseInt(parts[1]);
+            return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void saveBookings() {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(new ArrayList<Booking>(bookings));
+            oos.close();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error saving bookings: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadBookings() {
+        try {
+            bookings = new ArrayList<Booking>();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading bookings: " + e.getMessage());
+            bookings = new ArrayList<Booking>();
+        }
+    }
+
+    private void updateBookingsDisplay() {
+        bookingsArea.setText("");
+        if (bookings.isEmpty()) {
+            bookingsArea.append("No bookings found.\n");
+        } else {
+            for (Booking booking : bookings) {
+                bookingsArea.append(booking.toString() + "\n");
+            }
+        }
+    }
+
+    private class CustomButton extends Button {
+        public CustomButton(String label, Color bgColor) {
+            super(label);
+            setBackground(bgColor);
+            setForeground(Color.WHITE);
+        }
+    }
+}
