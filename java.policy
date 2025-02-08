@@ -1,0 +1,21 @@
+grant {
+    permission java.io.FilePermission "users.txt", "read,write,delete";
+};
+
+grant {
+    permission java.io.FilePermission "bookings.dat", "read, write";
+};
+
+grant {
+    // Allow read and write access to the current directory
+    permission java.io.FilePermission ".", "read,write,delete";
+    
+    // Allow read and write access to specific files
+    permission java.io.FilePermission "users.txt", "read,write,delete";
+    
+    // Allow network access
+    permission java.net.SocketPermission "*", "connect,resolve";
+    
+    // Allow property read access
+    permission java.util.PropertyPermission "*", "read";
+};
